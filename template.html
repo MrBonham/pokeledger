@@ -1,0 +1,1590 @@
+<title>PokéLedger — TCG Set Tracker</title>
+<style>
+  /* ============ Tokens ============ */
+  /* Palette: Prussian Blue #0a1128, Deep Navy #001f54, Yale Blue #034078,
+     Cerulean #1282a2, White #fefcfb — dark theme uses all five verbatim;
+     light theme derives tints/shades from the same five. */
+  :root {
+    --bg: #f2f6f7;
+    --surface: #fefcfb;
+    --surface-2: #e6f0f2;
+    --border: #c3dee5;
+    --text: #0a1128;
+    --text-dim: #426f99;
+    --accent: #1282a2;
+    --accent-ink: #fefcfb;
+    --good: #1f9463;
+    --good-bg: #e2f4ea;
+    --warn: #b8802a;
+    --warn-bg: #f5ead4;
+    --idle: #7c93ab;
+    --idle-bg: #eef2f6;
+    --shadow: 0 1px 2px rgba(10, 17, 40, 0.08);
+    --radius: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a1128;
+      --surface: #001f54;
+      --surface-2: #034078;
+      --border: #1e3a68;
+      --text: #fefcfb;
+      --text-dim: #9da8bc;
+      --accent: #1282a2;
+      --accent-ink: #fefcfb;
+      --good: #4fbf85;
+      --good-bg: #18343b;
+      --warn: #e0ac4f;
+      --warn-bg: #403832;
+      --idle: #7c8aa0;
+      --idle-bg: #1c2635;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a1128;
+    --surface: #001f54;
+    --surface-2: #034078;
+    --border: #1e3a68;
+    --text: #fefcfb;
+    --text-dim: #9da8bc;
+    --accent: #1282a2;
+    --accent-ink: #fefcfb;
+    --good: #4fbf85;
+    --good-bg: #18343b;
+    --warn: #e0ac4f;
+    --warn-bg: #403832;
+    --idle: #7c8aa0;
+    --idle-bg: #1c2635;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+  :root[data-theme="light"] {
+    --bg: #f2f6f7;
+    --surface: #fefcfb;
+    --surface-2: #e6f0f2;
+    --border: #c3dee5;
+    --text: #0a1128;
+    --text-dim: #426f99;
+    --accent: #1282a2;
+    --accent-ink: #fefcfb;
+    --good: #1f9463;
+    --good-bg: #e2f4ea;
+    --warn: #b8802a;
+    --warn-bg: #f5ead4;
+    --idle: #7c93ab;
+    --idle-bg: #eef2f6;
+    --shadow: 0 1px 2px rgba(10, 17, 40, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  .display {
+    font-family: "Rockwell", "Roboto Slab", "Georgia", serif;
+  }
+  .mono {
+    font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a { color: inherit; }
+  button { font-family: inherit; }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ============ Top bar ============ */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .topbar-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 16px 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .brand .sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .backup-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: var(--radius);
+    padding: 6px 11px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--border); background: var(--surface-2); color: var(--text); }
+  .btn.danger:hover { border-color: #c0524a; background: transparent; color: #c0524a; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:disabled:hover { border-color: transparent; background: transparent; color: var(--text-dim); }
+  .file-label { position: relative; overflow: hidden; }
+  .file-label input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+
+  .text-btn {
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+  .text-btn:hover { color: var(--accent); }
+  .text-btn:disabled { opacity: 0.4; cursor: not-allowed; color: var(--text-dim); }
+
+  .dash-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+  .dash-line strong { color: var(--text); font-weight: 700; }
+  .dash-line .num-good { color: var(--good); }
+  .dash-line .num-warn { color: var(--warn); }
+  .dash-line .num-idle { color: var(--idle); }
+  .dash-sep { color: var(--border); }
+  .overall-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .overall-bar .fill {
+    height: 100%;
+    background: var(--accent);
+  }
+
+  .search-row { display: flex; }
+  .search-input {
+    flex: 1 1 auto;
+    padding: 8px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .chip-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .chip:hover { color: var(--text); }
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .chip[aria-pressed="true"]:hover { color: var(--accent-ink); }
+  .chip-sep {
+    width: 1px;
+    align-self: stretch;
+    background: var(--border);
+    margin: 0 2px;
+  }
+  .filter-row-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+  .sort-select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+  }
+
+  /* ============ Main ============ */
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 18px 20px 80px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+
+  .era {
+    margin-bottom: 22px;
+  }
+  .era-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    border-left: 4px solid var(--accent);
+    padding: 4px 0 4px 12px;
+    margin-bottom: 8px;
+  }
+  .era-header h2 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+    font-weight: 700;
+  }
+  .era-toggle {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: inherit;
+    text-align: left;
+  }
+  .era-toggle:hover h2 { color: var(--accent); }
+  .era-chevron {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    width: 0.8em;
+    display: inline-block;
+  }
+  .era-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .row-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .row-wrap { display: block; }
+  .row {
+    display: grid;
+    grid-template-columns: 3px minmax(0, 1.6fr) minmax(90px, 0.7fr) auto;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 9px 12px 9px 0;
+  }
+  .row-wrap:has(.card-panel) .row {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .row-stripe { align-self: stretch; border-radius: 2px; background: var(--idle); }
+  .row-stripe.complete { background: var(--good); }
+  .row-stripe.progress { background: var(--warn); }
+
+  .row-main { min-width: 0; }
+  .row-name-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .expand-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.66rem;
+    padding: 0 1px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .expand-btn:hover { color: var(--accent); }
+  .row-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .row-code {
+    font-size: 0.66rem;
+    color: var(--text-dim);
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .row-meta {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .row-progress { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
+  .mini-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .mini-bar .fill { height: 100%; background: var(--idle); }
+  .mini-bar .fill.complete { background: var(--good); }
+  .mini-bar .fill.progress { background: var(--warn); }
+  .row-pct { font-size: 0.66rem; color: var(--text-dim); }
+
+  .row-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stepper {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stepper:hover { border-color: var(--accent); color: var(--accent); }
+  .owned-input {
+    width: 40px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 3px 2px;
+    font-size: 0.8rem;
+  }
+  .row-total { font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
+  .pill {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .pill.complete { color: var(--good); }
+  .pill.progress { color: var(--warn); }
+  .pill.idle { color: var(--idle); }
+  .quick-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: 3px;
+    font-size: 0.66rem;
+    padding: 3px 6px;
+    cursor: pointer;
+  }
+  .quick-btn:hover { border-color: var(--border); background: var(--surface-2); color: var(--accent); }
+
+  .track-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .track-btn:hover { border-color: var(--border); background: var(--surface-2); color: var(--accent); }
+  .track-btn.is-tracked {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .track-btn.is-tracked:hover { color: var(--accent-ink); opacity: 0.88; }
+
+  /* ============ View tabs ============ */
+  .view-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    padding: 7px 4px 9px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn[aria-pressed="true"] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ============ Compare view ============ */
+  .compare-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .compare-intro {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .name-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .name-field input { text-transform: none; letter-spacing: normal; width: 140px; }
+  .compare-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-dim);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+  .compare-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 44px auto;
+    align-items: center;
+    gap: 10px;
+  }
+  .compare-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .compare-name .you-tag {
+    font-size: 0.6rem;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 0 4px;
+    text-transform: uppercase;
+  }
+  .compare-remove {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0 2px;
+  }
+  .compare-remove:hover { color: #c0524a; }
+  .compare-bar-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .compare-bar-track .fill { height: 100%; background: var(--accent); }
+  .compare-pct { font-size: 0.75rem; color: var(--text-dim); text-align: right; }
+  .compare-detail { font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; }
+
+  .compare-table-wrap { overflow-x: auto; }
+  .compare-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.76rem;
+  }
+  .compare-table th, .compare-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+  .compare-table th {
+    color: var(--text-dim);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+  }
+  .compare-table td.set-cell {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    font-weight: 600;
+    white-space: normal;
+  }
+  .compare-table th.set-cell { position: sticky; left: 0; background: var(--surface); }
+  .compare-cell-pct { font-variant-numeric: tabular-nums; }
+  .compare-cell-pct.complete { color: var(--good); font-weight: 700; }
+  .compare-cell-pct.progress { color: var(--warn); }
+  .compare-cell-pct.idle { color: var(--text-dim); }
+
+  /* ============ Card panel ============ */
+  .card-panel {
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--surface-2);
+    padding: 10px 14px 14px 17px;
+  }
+  .panel-note {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    max-width: 60ch;
+  }
+  .copy-row { display: flex; gap: 8px; }
+  .copy-text {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 9px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 0.74rem;
+  }
+  .card-panel-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .card-panel-count { font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+  .rh-count { color: var(--accent); }
+  .card-panel-value {
+    font-size: 0.74rem;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+  .card-panel-value strong { color: var(--text); font-weight: 700; }
+  .card-panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 8px;
+  }
+  .card-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    background: var(--surface);
+    font-size: 0.82rem;
+  }
+  .card-chip.is-owned { background: var(--good-bg); }
+  .card-chip input[type="checkbox"] { flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+  .card-chip-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+  .rh-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .rh-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .rh-pill:has(input:checked) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .rh-pill:has(input:checked):hover { opacity: 0.88; color: var(--accent-ink); }
+  .rh-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .card-num { color: var(--text-dim); flex-shrink: 0; }
+  .card-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-rarity-icon {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    line-height: 1;
+    width: 1.1em;
+    text-align: center;
+  }
+  .card-rarity-icon.tier-common,
+  .card-rarity-icon.tier-uncommon,
+  .card-rarity-icon.tier-rare,
+  .card-rarity-icon.tier-promo { color: var(--text-dim); }
+  .card-rarity-icon.tier-holo,
+  .card-rarity-icon.tier-ultra { color: var(--accent); }
+  .card-rarity-icon.tier-chase { color: var(--warn); }
+
+  footer {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .row {
+      grid-template-columns: 3px 1fr;
+      grid-template-areas:
+        "stripe main"
+        "stripe progress"
+        "stripe controls";
+      row-gap: 8px;
+      padding: 10px 12px 10px 0;
+    }
+    .row-stripe { grid-area: stripe; }
+    .row-main { grid-area: main; }
+    .row-progress { grid-area: progress; }
+    .row-controls { grid-area: controls; justify-content: space-between; flex-wrap: wrap; }
+    .card-panel { padding-left: 12px; }
+  }
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="title-row">
+      <div class="brand">
+        <h1 class="display">PokéLedger</h1>
+        <span class="sub">TCG Set Tracker</span>
+      </div>
+      <div class="backup-controls">
+        <label class="btn file-label">
+          Import backup
+          <input type="file" id="importFile" accept="application/json" />
+        </label>
+        <button class="btn" id="exportBtn">Export backup</button>
+        <button class="btn danger" id="resetBtn">Reset all</button>
+      </div>
+    </div>
+
+    <div class="view-tabs" role="tablist" aria-label="View">
+      <button class="tab-btn" data-view="mine" role="tab" aria-pressed="true">My Collection</button>
+      <button class="tab-btn" data-view="compare" role="tab" aria-pressed="false">Compare</button>
+    </div>
+
+    <div id="mineControls">
+      <div class="dash-line" id="statStrip"></div>
+      <div class="overall-bar"><div class="fill" id="overallFill" style="width:0%"></div></div>
+
+      <div class="search-row">
+        <input class="search-input" id="searchInput" type="text" placeholder="Search sets or codes…" aria-label="Search sets" />
+      </div>
+
+      <div class="filter-row">
+        <div class="chip-group" id="statusFilters" role="group" aria-label="Filter by status">
+          <button class="chip" data-filter="all" aria-pressed="true">All</button>
+          <button class="chip" data-filter="idle" aria-pressed="false">Not started</button>
+          <button class="chip" data-filter="progress" aria-pressed="false">In progress</button>
+          <button class="chip" data-filter="complete" aria-pressed="false">Complete</button>
+        </div>
+        <span class="chip-sep"></span>
+        <button class="chip" id="trackedOnlyChip" aria-pressed="false">Tracked only</button>
+        <div class="filter-row-right">
+          <button class="text-btn" id="eraToggleAllBtn" disabled>Expand all</button>
+          <select class="sort-select" id="sortSelect" aria-label="Sort sets">
+            <option value="release-asc">Release date ↑ (oldest first)</option>
+            <option value="release-desc">Release date ↓ (newest first)</option>
+            <option value="name">Name A–Z</option>
+            <option value="completion">Completion %</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<div id="compareView">
+  <div class="compare-wrap">
+    <div class="compare-intro">
+      <label class="name-field">
+        Your name
+        <input type="text" id="myNameInput" class="search-input" placeholder="You" />
+      </label>
+      <label class="btn file-label">
+        Add friend's backup
+        <input type="file" id="importFriendFile" accept="application/json" />
+      </label>
+      <button class="chip" id="compareAllSetsChip" aria-pressed="false">Show all sets</button>
+    </div>
+    <div id="leaderboard" class="compare-leaderboard"></div>
+    <div id="compareTableWrap" class="compare-table-wrap"></div>
+  </div>
+</div>
+
+<footer>
+  Data: 174 official sets from the Pokémon TCG API (snapshot, <span id="dataDate"></span>). Your progress is saved only in
+  this browser's local storage — it isn't shared with other viewers of this page and won't follow you to a different
+  device or browser. Use Export/Import to back up or move it.
+  <br /><br />
+  Tap <strong>Track</strong> on a set to follow it closely. If its full card checklist hasn't been loaded yet, the panel
+  gives you a ready-made request to copy into your next conversation so it can be added — this page has no server of its
+  own to fetch card lists on the fly.
+  <br /><br />
+  Want to compare with others? There's no shared server here, so each person exports their own progress from
+  <strong>My Collection</strong>, sends the file over, and everyone loads the group's files into the <strong>Compare</strong>
+  tab on their own copy of this page.
+  <br /><br />
+  Master set and collection values use TCGplayer market prices from the same data snapshot — they're a point-in-time
+  estimate, not a live quote, and will drift as prices change. Ask for a refresh if you want current numbers.
+</footer>
+
+<script>
+  const SETS = /*__SETS_DATA__*/[]/*__END_SETS_DATA__*/;
+  const CARD_DATA = /*__CARD_DATA__*/{}/*__END_CARD_DATA__*/;
+  const STORAGE_KEY = 'poke-ledger-progress-v1';
+  const SNAPSHOT_DATE = '__SNAPSHOT_DATE__';
+
+  document.getElementById('dataDate').textContent = SNAPSHOT_DATE;
+
+  function normalizeProgress(parsed) {
+    if (parsed && typeof parsed === 'object' && (parsed.counts || parsed.tracked || parsed.cardOwnership || parsed.reverseOwnership)) {
+      return {
+        counts: parsed.counts || {},
+        tracked: parsed.tracked || {},
+        cardOwnership: parsed.cardOwnership || {},
+        reverseOwnership: parsed.reverseOwnership || {}
+      };
+    }
+    if (parsed && typeof parsed === 'object') {
+      return { counts: parsed, tracked: {}, cardOwnership: {}, reverseOwnership: {} };
+    }
+    return { counts: {}, tracked: {}, cardOwnership: {}, reverseOwnership: {} };
+  }
+
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? normalizeProgress(JSON.parse(raw)) : normalizeProgress(null);
+    } catch (e) {
+      return normalizeProgress(null);
+    }
+  }
+  function saveProgress() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  }
+
+  let progress = loadProgress();
+  let expanded = new Set();
+  let state = { filter: 'all', search: '', sort: 'release-asc', trackedOnly: false, view: 'mine', compareAllSets: false };
+
+  const ERA_COLLAPSE_KEY = 'poke-ledger-era-collapse';
+  function loadEraOverrides() {
+    try {
+      const raw = localStorage.getItem(ERA_COLLAPSE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function saveEraOverrides() {
+    localStorage.setItem(ERA_COLLAPSE_KEY, JSON.stringify(eraOverrides));
+  }
+  let eraOverrides = loadEraOverrides();
+  let lastEraNames = [];
+  let lastEraCollapsedMap = {};
+
+  function isEraCollapsed(eraName, sets) {
+    if (Object.prototype.hasOwnProperty.call(eraOverrides, eraName)) return eraOverrides[eraName];
+    const hasActivity = sets.some(s => isTracked(s.id) || ownedFor(s) > 0);
+    return !hasActivity;
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function isTracked(setId, ctx) { return !!(ctx || progress).tracked[setId]; }
+
+  function ownedFor(set, ctx) {
+    ctx = ctx || progress;
+    if (CARD_DATA[set.id]) {
+      const co = ctx.cardOwnership[set.id] || {};
+      let n = 0;
+      for (const k in co) if (co[k]) n++;
+      return n;
+    }
+    const v = ctx.counts[set.id];
+    return typeof v === 'number' && v >= 0 ? v : 0;
+  }
+  function statusFor(set, ctx) {
+    const owned = Math.min(ownedFor(set, ctx), set.total);
+    if (owned <= 0) return 'idle';
+    if (owned >= set.total) return 'complete';
+    return 'progress';
+  }
+  function pct(set, ctx) {
+    if (!set.total) return 0;
+    return Math.round((Math.min(ownedFor(set, ctx), set.total) / set.total) * 100);
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    const [y, m, day] = d.split('/');
+    const date = new Date(Number(y), Number(m) - 1, Number(day));
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function fmtUsd(n) {
+    return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function rarityInfo(rarity) {
+    const r = (rarity || '').toLowerCase();
+    if (!r) return { icon: '', tier: '' };
+    if (r === 'common') return { icon: '●', tier: 'common' };
+    if (r === 'uncommon') return { icon: '◆', tier: 'uncommon' };
+    if (r === 'promo') return { icon: '⚑', tier: 'promo' };
+    if (r.includes('secret') || r.includes('rainbow') || r.includes('hyper') || r.includes('illustration') || r.includes('gallery') || r.includes('black white')) {
+      return { icon: '✶', tier: 'chase' };
+    }
+    if (r.includes('ultra') || r.includes('double rare')) {
+      return { icon: '✦', tier: 'ultra' };
+    }
+    if (r === 'rare') return { icon: '★', tier: 'rare' };
+    return { icon: '★', tier: 'holo' };
+  }
+
+  function setOwned(set, val) {
+    const clamped = Math.max(0, Math.min(set.total, Math.round(val) || 0));
+    progress.counts[set.id] = clamped;
+    saveProgress();
+    renderApp();
+  }
+
+  function toggleTracked(setId) {
+    const next = !isTracked(setId);
+    progress.tracked[setId] = next;
+    if (next) expanded.add(setId);
+    else expanded.delete(setId);
+    saveProgress();
+    renderApp();
+  }
+
+  function toggleExpand(setId) {
+    if (expanded.has(setId)) expanded.delete(setId);
+    else expanded.add(setId);
+    renderApp();
+  }
+
+  function setCardOwned(setId, cardNumber, val) {
+    if (!progress.cardOwnership[setId]) progress.cardOwnership[setId] = {};
+    progress.cardOwnership[setId][cardNumber] = val;
+    saveProgress();
+    renderApp();
+  }
+
+  function setReverseOwned(setId, cardNumber, val) {
+    if (!progress.reverseOwnership[setId]) progress.reverseOwnership[setId] = {};
+    progress.reverseOwnership[setId][cardNumber] = val;
+    saveProgress();
+    renderApp();
+  }
+
+  function setAllCards(setId, val) {
+    const cards = CARD_DATA[setId] || [];
+    const obj = {};
+    if (val) cards.forEach(c => { obj[c.number] = true; });
+    progress.cardOwnership[setId] = obj;
+    saveProgress();
+    renderApp();
+  }
+
+  function setAllReverse(setId, val) {
+    const cards = (CARD_DATA[setId] || []).filter(c => c.rev);
+    const obj = {};
+    if (val) cards.forEach(c => { obj[c.number] = true; });
+    progress.reverseOwnership[setId] = obj;
+    saveProgress();
+    renderApp();
+  }
+
+  function computeStats(ctx) {
+    ctx = ctx || progress;
+    let complete = 0, inProgress = 0, idle = 0, cardsOwned = 0, cardsTotal = 0;
+    for (const s of SETS) {
+      const st = statusFor(s, ctx);
+      if (st === 'complete') complete++;
+      else if (st === 'progress') inProgress++;
+      else idle++;
+      cardsOwned += Math.min(ownedFor(s, ctx), s.total);
+      cardsTotal += s.total;
+    }
+    return { complete, inProgress, idle, cardsOwned, cardsTotal };
+  }
+
+  function renderStats() {
+    const { complete, inProgress, idle, cardsOwned, cardsTotal } = computeStats();
+    const overallPct = cardsTotal ? Math.round((cardsOwned / cardsTotal) * 100) : 0;
+    document.getElementById('statStrip').innerHTML = `
+      <span><strong class="mono num-good">${complete}</strong> complete</span>
+      <span class="dash-sep">·</span>
+      <span><strong class="mono num-warn">${inProgress}</strong> in progress</span>
+      <span class="dash-sep">·</span>
+      <span><strong class="mono num-idle">${idle}</strong> not started</span>
+      <span class="dash-sep">·</span>
+      <span class="mono">${cardsOwned.toLocaleString()} / ${cardsTotal.toLocaleString()} cards (<strong class="mono">${overallPct}%</strong>)</span>
+    `;
+    document.getElementById('overallFill').style.width = overallPct + '%';
+  }
+
+  function matchesFilters(set) {
+    if (state.filter !== 'all' && statusFor(set) !== state.filter) return false;
+    if (state.trackedOnly && !isTracked(set.id)) return false;
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      if (!set.name.toLowerCase().includes(q) && !(set.code || '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }
+
+  function sortedSets(list) {
+    const arr = list.slice();
+    switch (state.sort) {
+      case 'release-desc':
+        arr.sort((a, b) => (b.releaseDate || '').localeCompare(a.releaseDate || ''));
+        break;
+      case 'name':
+        arr.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'completion':
+        arr.sort((a, b) => pct(b) - pct(a));
+        break;
+      default:
+        arr.sort((a, b) => (a.releaseDate || '').localeCompare(b.releaseDate || ''));
+    }
+    return arr;
+  }
+
+  function groupByEra(list) {
+    const order = [];
+    const groups = new Map();
+    for (const s of list) {
+      if (!groups.has(s.series)) { groups.set(s.series, []); order.push(s.series); }
+      groups.get(s.series).push(s);
+    }
+    return order.map(series => ({ series, sets: groups.get(series) }));
+  }
+
+  function panelHtml(set) {
+    const hasCardData = !!CARD_DATA[set.id];
+    if (!hasCardData) {
+      const reqText = `Please fetch the full card list for: ${set.name} (set id ${set.id}) and add it to PokeLedger.`;
+      return `
+        <div class="card-panel">
+          <p class="panel-note">Full card checklist not loaded for this set yet. Copy the request below into your next
+          PokéLedger conversation and it'll be added.</p>
+          <div class="copy-row">
+            <input class="copy-text mono" readonly value="${esc(reqText)}" onclick="this.select()" />
+            <button class="btn" data-action="copy-request" data-text="${esc(reqText)}">Copy</button>
+          </div>
+        </div>
+      `;
+    }
+    const cards = CARD_DATA[set.id];
+    const owned = progress.cardOwnership[set.id] || {};
+    const revOwned = progress.reverseOwnership[set.id] || {};
+    const ownedCount = cards.filter(c => owned[c.number]).length;
+    const reverseEligible = cards.filter(c => c.rev);
+    const reverseOwnedCount = reverseEligible.filter(c => revOwned[c.number]).length;
+
+    let masterValue = 0, yourValue = 0, pricedCards = 0;
+    cards.forEach(c => {
+      if (typeof c.price === 'number') {
+        pricedCards++;
+        masterValue += c.price;
+        if (owned[c.number]) yourValue += c.price;
+      }
+      if (c.rev && typeof c.revPrice === 'number') {
+        masterValue += c.revPrice;
+        if (revOwned[c.number]) yourValue += c.revPrice;
+      }
+    });
+
+    return `
+      <div class="card-panel">
+        <div class="card-panel-toolbar">
+          <span class="card-panel-count mono">
+            ${ownedCount} / ${cards.length} cards checked
+            ${reverseEligible.length ? `<span class="rh-count">+ ${reverseOwnedCount} / ${reverseEligible.length} reverse holo</span>` : ''}
+          </span>
+          <div class="card-panel-actions">
+            <button class="quick-btn" data-action="check-all">Check all</button>
+            <button class="quick-btn" data-action="check-none">Clear all</button>
+            ${reverseEligible.length ? `
+              <span class="chip-sep"></span>
+              <button class="quick-btn" data-action="check-all-rh">Check all RH</button>
+              <button class="quick-btn" data-action="check-none-rh">Clear all RH</button>
+            ` : ''}
+          </div>
+        </div>
+        ${pricedCards ? `
+          <div class="card-panel-value mono">
+            Master set value <strong>${fmtUsd(masterValue)}</strong>
+            <span class="dash-sep">·</span>
+            Your value <strong>${fmtUsd(yourValue)}</strong>
+          </div>
+        ` : ''}
+        <div class="card-grid">
+          ${cards.map(c => {
+            const rarity = rarityInfo(c.rarity);
+            return `
+            <div class="card-chip ${owned[c.number] ? 'is-owned' : ''}">
+              <label class="card-chip-main" title="Normal">
+                <input type="checkbox" data-card="${esc(c.number)}" data-variant="normal" ${owned[c.number] ? 'checked' : ''} />
+                <span class="card-num mono">#${esc(c.number)}</span>
+                <span class="card-name">${esc(c.name)}</span>
+                ${rarity.icon ? `<span class="card-rarity-icon tier-${rarity.tier}" title="${esc(c.rarity)}">${rarity.icon}</span>` : ''}
+              </label>
+              ${c.rev ? `
+                <label class="rh-pill" title="Reverse holo">
+                  <input class="rh-input" type="checkbox" data-card="${esc(c.number)}" data-variant="reverse" ${revOwned[c.number] ? 'checked' : ''} />
+                  RH
+                </label>
+              ` : ''}
+            </div>
+          `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function rowHtml(set) {
+    const st = statusFor(set);
+    const owned = ownedFor(set);
+    const p = pct(set);
+    const pillLabel = st === 'complete' ? 'Complete' : st === 'progress' ? 'In progress' : 'Not started';
+    const tracked = isTracked(set.id);
+    const hasCardData = !!CARD_DATA[set.id];
+    const isExpanded = expanded.has(set.id);
+
+    const controlsHtml = hasCardData
+      ? `<span class="row-total mono">${owned} / ${set.total} cards</span>`
+      : `
+        <button class="stepper" data-action="dec" aria-label="Decrease owned count for ${esc(set.name)}">–</button>
+        <input class="owned-input mono" type="number" min="0" max="${set.total}" value="${owned}" aria-label="Cards owned for ${esc(set.name)}" />
+        <span class="row-total mono">/ ${set.total}</span>
+        <button class="stepper" data-action="inc" aria-label="Increase owned count for ${esc(set.name)}">+</button>
+        <button class="quick-btn" data-action="${st === 'complete' ? 'reset' : 'complete'}">${st === 'complete' ? 'Reset' : 'Mark done'}</button>
+      `;
+
+    const expandBtn = tracked
+      ? `<button class="expand-btn" data-action="toggle-expand" aria-expanded="${isExpanded}" aria-label="${isExpanded ? 'Collapse' : 'Expand'} card list for ${esc(set.name)}">${isExpanded ? '▾' : '▸'}</button>`
+      : '';
+
+    return `
+      <div class="row-wrap" data-id="${set.id}">
+        <div class="row">
+          <div class="row-stripe ${st}"></div>
+          <div class="row-main">
+            <div class="row-name-line">
+              ${expandBtn}
+              <span class="row-name" title="${esc(set.name)}">${esc(set.name)}</span>
+              ${set.code ? `<span class="row-code mono">${esc(set.code)}</span>` : ''}
+              <span class="pill ${st}">${pillLabel}</span>
+            </div>
+            <div class="row-meta mono">${fmtDate(set.releaseDate)}</div>
+          </div>
+          <div class="row-progress">
+            <div class="mini-bar"><div class="fill ${st}" style="width:${p}%"></div></div>
+            <span class="row-pct mono">${p}%</span>
+          </div>
+          <div class="row-controls">
+            ${controlsHtml}
+            <button class="track-btn ${tracked ? 'is-tracked' : ''}" data-action="toggle-track" aria-pressed="${tracked}">${tracked ? 'Tracking' : '+ Track'}</button>
+          </div>
+        </div>
+        ${isExpanded ? panelHtml(set) : ''}
+      </div>
+    `;
+  }
+
+  function eraYearRange(sets) {
+    const years = sets.map(s => (s.releaseDate || '').split('/')[0]).filter(Boolean);
+    if (!years.length) return '';
+    const min = Math.min(...years), max = Math.max(...years);
+    return min === max ? String(min) : `${min}–${max}`;
+  }
+
+  function renderMine() {
+    renderStats();
+    const filtered = SETS.filter(matchesFilters);
+    const sorted = sortedSets(filtered);
+    const main = document.getElementById('main');
+
+    if (!sorted.length) {
+      lastEraNames = [];
+      lastEraCollapsedMap = {};
+      main.innerHTML = `<div class="empty-state">No sets match your search or filter.</div>`;
+      updateEraToggleAllBtn();
+      return;
+    }
+
+    if (state.sort !== 'release-asc' && state.sort !== 'release-desc') {
+      lastEraNames = [];
+      lastEraCollapsedMap = {};
+      main.innerHTML = `
+        <div class="era">
+          <div class="row-list">${sorted.map(rowHtml).join('')}</div>
+        </div>
+      `;
+    } else {
+      const groups = groupByEra(sorted);
+      lastEraNames = groups.map(g => g.series);
+      lastEraCollapsedMap = {};
+      const forceExpanded = !!(state.search || state.filter !== 'all' || state.trackedOnly);
+      main.innerHTML = groups.map(g => {
+        const done = g.sets.filter(s => statusFor(s) === 'complete').length;
+        const collapsed = isEraCollapsed(g.series, g.sets) && !forceExpanded;
+        lastEraCollapsedMap[g.series] = collapsed;
+        return `
+          <section class="era">
+            <div class="era-header">
+              <button class="era-toggle" data-action="toggle-era" data-era="${esc(g.series)}" data-collapsed="${collapsed}" aria-expanded="${!collapsed}">
+                <span class="era-chevron">${collapsed ? '▸' : '▾'}</span>
+                <h2 class="display">${g.series}</h2>
+              </button>
+              <div class="era-meta mono">
+                <span>${eraYearRange(g.sets)}</span>
+                <span>${g.sets.length} sets</span>
+                <span>${done}/${g.sets.length} complete</span>
+              </div>
+            </div>
+            ${collapsed ? '' : `<div class="row-list">${g.sets.map(rowHtml).join('')}</div>`}
+          </section>
+        `;
+      }).join('');
+    }
+
+    updateEraToggleAllBtn();
+  }
+
+  function updateEraToggleAllBtn() {
+    const btn = document.getElementById('eraToggleAllBtn');
+    const anyExpanded = lastEraNames.some(era => !lastEraCollapsedMap[era]);
+    btn.textContent = anyExpanded ? 'Collapse all' : 'Expand all';
+    btn.disabled = lastEraNames.length === 0;
+  }
+
+  /* ============ Compare view ============ */
+  const PROFILES_KEY = 'poke-ledger-profiles-v1';
+  const MYNAME_KEY = 'poke-ledger-myname';
+
+  function loadProfiles() {
+    try {
+      const raw = localStorage.getItem(PROFILES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveProfiles() {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  }
+
+  let profiles = loadProfiles();
+  let myName = localStorage.getItem(MYNAME_KEY) || '';
+
+  function allCompareProfiles() {
+    return [{ id: 'me', name: myName || 'You', isMe: true, progress }].concat(profiles);
+  }
+
+  function renderLeaderboard() {
+    const all = allCompareProfiles();
+    const rows = all.map(p => {
+      const stats = computeStats(p.progress);
+      const overallPct = stats.cardsTotal ? Math.round((stats.cardsOwned / stats.cardsTotal) * 100) : 0;
+      return { profile: p, stats, overallPct };
+    }).sort((a, b) => b.overallPct - a.overallPct);
+
+    document.getElementById('leaderboard').innerHTML = rows.map(r => `
+      <div class="compare-row">
+        <div class="compare-name">
+          ${esc(r.profile.name)}
+          ${r.profile.isMe ? '<span class="you-tag">You</span>' : `<button class="compare-remove" data-remove="${esc(r.profile.id)}" aria-label="Remove ${esc(r.profile.name)}">✕</button>`}
+        </div>
+        <div class="compare-bar-track"><div class="fill" style="width:${r.overallPct}%"></div></div>
+        <div class="compare-pct mono">${r.overallPct}%</div>
+        <div class="compare-detail mono">${r.stats.complete} complete · ${r.stats.cardsOwned.toLocaleString()}/${r.stats.cardsTotal.toLocaleString()} cards</div>
+      </div>
+    `).join('');
+  }
+
+  function renderCompareTable() {
+    const all = allCompareProfiles();
+    const wrap = document.getElementById('compareTableWrap');
+
+    let rowSets;
+    if (state.compareAllSets) {
+      rowSets = SETS.slice();
+    } else {
+      rowSets = SETS.filter(s => all.some(p => isTracked(s.id, p.progress)));
+    }
+    rowSets = sortedSets(rowSets);
+
+    if (!rowSets.length) {
+      wrap.innerHTML = `<div class="compare-empty">No tracked sets to compare yet. Track a set in My Collection, or toggle "Show all sets" above.</div>`;
+      return;
+    }
+
+    const header = `
+      <tr>
+        <th class="set-cell">Set</th>
+        ${all.map(p => `<th>${esc(p.name)}</th>`).join('')}
+      </tr>
+    `;
+    const rows = rowSets.map(s => `
+      <tr>
+        <td class="set-cell">${esc(s.name)}</td>
+        ${all.map(p => {
+          const st = statusFor(s, p.progress);
+          const pc = pct(s, p.progress);
+          return `<td class="compare-cell-pct ${st}">${pc}%</td>`;
+        }).join('')}
+      </tr>
+    `).join('');
+
+    wrap.innerHTML = `<table class="compare-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function renderCompare() {
+    renderLeaderboard();
+    renderCompareTable();
+  }
+
+  function renderApp() {
+    const mine = state.view === 'mine';
+    document.getElementById('mineControls').style.display = mine ? '' : 'none';
+    document.getElementById('main').style.display = mine ? '' : 'none';
+    document.getElementById('compareView').style.display = mine ? 'none' : '';
+    document.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+    if (mine) renderMine();
+    else renderCompare();
+  }
+
+  function copyRequestText(btn) {
+    const text = btn.dataset.text;
+    const original = btn.textContent;
+    const flash = (label) => { btn.textContent = label; setTimeout(() => { btn.textContent = original; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => flash('Copied')).catch(() => flash('Select & copy'));
+    } else {
+      flash('Select & copy');
+    }
+  }
+
+  document.getElementById('main').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === 'toggle-era') {
+      const era = btn.dataset.era;
+      const currentlyCollapsed = btn.dataset.collapsed === 'true';
+      eraOverrides[era] = !currentlyCollapsed;
+      saveEraOverrides();
+      renderApp();
+      return;
+    }
+
+    const wrap = e.target.closest('.row-wrap');
+    if (!wrap) return;
+    const setId = wrap.dataset.id;
+    const set = SETS.find(s => s.id === setId);
+
+    if (action === 'toggle-track') return toggleTracked(setId);
+    if (action === 'toggle-expand') return toggleExpand(setId);
+    if (action === 'check-all') return setAllCards(setId, true);
+    if (action === 'check-none') return setAllCards(setId, false);
+    if (action === 'check-all-rh') return setAllReverse(setId, true);
+    if (action === 'check-none-rh') return setAllReverse(setId, false);
+    if (action === 'copy-request') return copyRequestText(btn);
+
+    const current = ownedFor(set);
+    if (action === 'inc') setOwned(set, current + 1);
+    else if (action === 'dec') setOwned(set, current - 1);
+    else if (action === 'complete') setOwned(set, set.total);
+    else if (action === 'reset') setOwned(set, 0);
+  });
+
+  document.getElementById('eraToggleAllBtn').addEventListener('click', () => {
+    const anyExpanded = lastEraNames.some(era => !lastEraCollapsedMap[era]);
+    lastEraNames.forEach(era => { eraOverrides[era] = anyExpanded; });
+    saveEraOverrides();
+    renderApp();
+  });
+
+  document.getElementById('main').addEventListener('change', (e) => {
+    const input = e.target.closest('.owned-input');
+    if (input) {
+      const wrap = e.target.closest('.row-wrap');
+      const set = SETS.find(s => s.id === wrap.dataset.id);
+      setOwned(set, Number(input.value));
+      return;
+    }
+    const checkbox = e.target.closest('.card-grid input[type="checkbox"]');
+    if (checkbox) {
+      const wrap = e.target.closest('.row-wrap');
+      const setId = wrap.dataset.id;
+      if (checkbox.dataset.variant === 'reverse') setReverseOwned(setId, checkbox.dataset.card, checkbox.checked);
+      else setCardOwned(setId, checkbox.dataset.card, checkbox.checked);
+    }
+  });
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    state.search = e.target.value;
+    renderApp();
+  });
+
+  document.getElementById('statusFilters').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    state.filter = chip.dataset.filter;
+    document.querySelectorAll('#statusFilters .chip').forEach(c => c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'));
+    renderApp();
+  });
+
+  document.getElementById('trackedOnlyChip').addEventListener('click', (e) => {
+    state.trackedOnly = !state.trackedOnly;
+    e.currentTarget.setAttribute('aria-pressed', String(state.trackedOnly));
+    renderApp();
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', (e) => {
+    state.sort = e.target.value;
+    renderApp();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('Clear all tracked progress in this browser? This cannot be undone.')) {
+      progress = normalizeProgress(null);
+      expanded = new Set();
+      saveProgress();
+      renderApp();
+    }
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', async () => {
+    const payload = JSON.stringify({ exportedAt: SNAPSHOT_DATE, progress }, null, 2);
+    if (window.claude && window.claude.downloads) {
+      try {
+        await window.claude.downloads.save({ filename: 'pokeledger-backup.json', data: payload });
+      } catch (err) {
+        alert('Export was not saved: ' + (err && err.message ? err.message : 'unknown error'));
+      }
+    } else {
+      alert('Downloads are unavailable in this view.');
+    }
+  });
+
+  document.getElementById('importFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const incoming = parsed && parsed.progress ? parsed.progress : parsed;
+        progress = normalizeProgress(incoming);
+        saveProgress();
+        renderApp();
+      } catch (err) {
+        alert('That file could not be read as a PokéLedger backup.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.view = btn.dataset.view;
+      renderApp();
+    });
+  });
+
+  const myNameInput = document.getElementById('myNameInput');
+  myNameInput.value = myName;
+  myNameInput.addEventListener('input', (e) => {
+    myName = e.target.value;
+    localStorage.setItem(MYNAME_KEY, myName);
+    renderApp();
+  });
+
+  document.getElementById('compareAllSetsChip').addEventListener('click', (e) => {
+    state.compareAllSets = !state.compareAllSets;
+    e.currentTarget.setAttribute('aria-pressed', String(state.compareAllSets));
+    renderApp();
+  });
+
+  document.getElementById('leaderboard').addEventListener('click', (e) => {
+    const btn = e.target.closest('.compare-remove');
+    if (!btn) return;
+    const id = btn.dataset.remove;
+    const p = profiles.find(x => x.id === id);
+    if (p && confirm(`Remove "${p.name}" from the comparison?`)) {
+      profiles = profiles.filter(x => x.id !== id);
+      saveProfiles();
+      renderApp();
+    }
+  });
+
+  document.getElementById('importFriendFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const suggested = file.name.replace(/\.json$/i, '').replace(/[-_]?pokeledger[-_]?backup[-_]?/i, '').trim();
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const incoming = parsed && parsed.progress ? parsed.progress : parsed;
+        const normalized = normalizeProgress(incoming);
+        const name = (prompt('Name for this profile?', suggested || 'Friend') || '').trim();
+        if (!name) return;
+        const existing = profiles.find(p => p.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+          if (!confirm(`"${name}" is already in the comparison. Replace their data with this file?`)) return;
+          existing.progress = normalized;
+        } else {
+          profiles.push({ id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7), name, progress: normalized });
+        }
+        saveProfiles();
+        renderApp();
+      } catch (err) {
+        alert('That file could not be read as a PokéLedger backup.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  renderApp();
+</script>
