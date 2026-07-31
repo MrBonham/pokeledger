@@ -894,7 +894,8 @@
 
   let progress = loadProgress();
   let expanded = new Set();
-  let state = { filter: 'all', search: '', sort: 'release-asc', trackedOnly: false, view: 'mine', compareAllSets: false };
+  const hasAnyTracked = Object.values(progress.tracked).some(Boolean);
+  let state = { filter: 'all', search: '', sort: 'release-asc', trackedOnly: hasAnyTracked, view: 'mine', compareAllSets: false };
 
   const ERA_COLLAPSE_KEY = 'poke-ledger-era-collapse';
   function loadEraOverrides() {
@@ -1586,5 +1587,6 @@
     e.target.value = '';
   });
 
+  document.getElementById('trackedOnlyChip').setAttribute('aria-pressed', String(state.trackedOnly));
   renderApp();
 </script>
