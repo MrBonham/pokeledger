@@ -7,8 +7,21 @@ let template = fs.readFileSync(path.join(__dirname, 'template.html'), 'utf-8');
 
 const snapshotDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
+// Card data ships as one small file per set (cards/<setId>.json), fetched by the
+// page on demand, instead of embedding all ~20k cards into every page load.
+const cardsDir = path.join(__dirname, 'cards');
+fs.mkdirSync(cardsDir, { recursive: true });
+const staleFiles = new Set(fs.readdirSync(cardsDir));
+for (const [setId, cardList] of Object.entries(cards)) {
+  const fname = `${setId}.json`;
+  fs.writeFileSync(path.join(cardsDir, fname), JSON.stringify(cardList));
+  staleFiles.delete(fname);
+}
+for (const stale of staleFiles) {
+  fs.unlinkSync(path.join(cardsDir, stale));
+}
+
 template = template.replace('/*__SETS_DATA__*/[]/*__END_SETS_DATA__*/', JSON.stringify(sets));
-template = template.replace('/*__CARD_DATA__*/{}/*__END_CARD_DATA__*/', JSON.stringify(cards));
 template = template.replace('__SNAPSHOT_DATE__', snapshotDate);
 
 const splitAt = template.indexOf('</style>') + '</style>'.length;
@@ -42,3 +55,4 @@ ${bodyContent}
 
 fs.writeFileSync(path.join(__dirname, 'index.html'), doc);
 console.log('wrote index.html, bytes:', fs.statSync(path.join(__dirname, 'index.html')).size);
+console.log('wrote', Object.keys(cards).length, 'per-set card files to cards/');

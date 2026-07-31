@@ -626,17 +626,6 @@
     color: var(--text-dim);
     max-width: 60ch;
   }
-  .copy-row { display: flex; gap: 8px; }
-  .copy-text {
-    flex: 1;
-    min-width: 0;
-    padding: 6px 9px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--surface);
-    color: var(--text-dim);
-    font-size: 0.74rem;
-  }
   .card-panel-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -845,21 +834,45 @@
   this browser's local storage — it isn't shared with other viewers of this page and won't follow you to a different
   device or browser. Use Export/Import to back up or move it.
   <br /><br />
-  Tap <strong>Track</strong> on a set to follow it closely. If its full card checklist hasn't been loaded yet, the panel
-  gives you a ready-made request to copy into your next conversation so it can be added — this page has no server of its
-  own to fetch card lists on the fly.
+  Tap <strong>Track</strong> on a set to follow it closely and load its full card checklist — card data loads on demand
+  per set rather than all at once, so it needs a network connection the first time you open any given set (it's cached
+  for offline use after that).
   <br /><br />
   Want to compare with others? There's no shared server here, so each person exports their own progress from
   <strong>My Collection</strong>, sends the file over, and everyone loads the group's files into the <strong>Compare</strong>
   tab on their own copy of this page.
   <br /><br />
-  Master set and collection values use TCGplayer market prices from the same data snapshot — they're a point-in-time
-  estimate, not a live quote, and will drift as prices change. Ask for a refresh if you want current numbers.
+  Master set and collection values use TCGplayer market prices, refreshed automatically once a day — treat them as a
+  daily snapshot, not a live quote.
 </footer>
 
 <script>
   const SETS = /*__SETS_DATA__*/[]/*__END_SETS_DATA__*/;
-  const CARD_DATA = /*__CARD_DATA__*/{}/*__END_CARD_DATA__*/;
+  // Card data is NOT embedded — each set's cards live in cards/<setId>.json and
+  // are fetched on demand (only for tracked sets, or whatever a viewer opens),
+  // instead of shipping all ~20k cards in every page load.
+  let CARD_DATA = {};
+  let cardDataLoading = new Set();
+
+  async function ensureCardData(setIds) {
+    const toFetch = setIds.filter(id => !CARD_DATA[id] && !cardDataLoading.has(id));
+    if (!toFetch.length) return;
+    toFetch.forEach(id => cardDataLoading.add(id));
+    renderApp();
+    await Promise.all(toFetch.map(async (id) => {
+      try {
+        const res = await fetch(`cards/${id}.json`);
+        if (!res.ok) throw new Error('fetch failed: ' + res.status);
+        CARD_DATA[id] = await res.json();
+      } catch (e) {
+        // leave unloaded — the panel offers a retry button
+      } finally {
+        cardDataLoading.delete(id);
+      }
+    }));
+    renderApp();
+  }
+
   const STORAGE_KEY = 'poke-ledger-progress-v1';
   const SNAPSHOT_DATE = '__SNAPSHOT_DATE__';
 
@@ -983,15 +996,23 @@
   function toggleTracked(setId) {
     const next = !isTracked(setId);
     progress.tracked[setId] = next;
-    if (next) expanded.add(setId);
-    else expanded.delete(setId);
+    if (next) {
+      expanded.add(setId);
+      ensureCardData([setId]);
+    } else {
+      expanded.delete(setId);
+    }
     saveProgress();
     renderApp();
   }
 
   function toggleExpand(setId) {
-    if (expanded.has(setId)) expanded.delete(setId);
-    else expanded.add(setId);
+    if (expanded.has(setId)) {
+      expanded.delete(setId);
+    } else {
+      expanded.add(setId);
+      ensureCardData([setId]);
+    }
     renderApp();
   }
 
@@ -1097,15 +1118,17 @@
   function panelHtml(set) {
     const hasCardData = !!CARD_DATA[set.id];
     if (!hasCardData) {
-      const reqText = `Please fetch the full card list for: ${set.name} (set id ${set.id}) and add it to PokeLedger.`;
+      if (cardDataLoading.has(set.id)) {
+        return `
+          <div class="card-panel">
+            <p class="panel-note">Loading card list…</p>
+          </div>
+        `;
+      }
       return `
         <div class="card-panel">
-          <p class="panel-note">Full card checklist not loaded for this set yet. Copy the request below into your next
-          PokéLedger conversation and it'll be added.</p>
-          <div class="copy-row">
-            <input class="copy-text mono" readonly value="${esc(reqText)}" onclick="this.select()" />
-            <button class="btn" data-action="copy-request" data-text="${esc(reqText)}">Copy</button>
-          </div>
+          <p class="panel-note">Card list didn't load — this needs a network connection at least once per set.</p>
+          <button class="btn" data-action="retry-load">Try again</button>
         </div>
       `;
     }
@@ -1391,17 +1414,6 @@
     else renderCompare();
   }
 
-  function copyRequestText(btn) {
-    const text = btn.dataset.text;
-    const original = btn.textContent;
-    const flash = (label) => { btn.textContent = label; setTimeout(() => { btn.textContent = original; }, 1500); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => flash('Copied')).catch(() => flash('Select & copy'));
-    } else {
-      flash('Select & copy');
-    }
-  }
-
   document.getElementById('main').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -1427,7 +1439,7 @@
     if (action === 'check-none') return setAllCards(setId, false);
     if (action === 'check-all-rh') return setAllReverse(setId, true);
     if (action === 'check-none-rh') return setAllReverse(setId, false);
-    if (action === 'copy-request') return copyRequestText(btn);
+    if (action === 'retry-load') return ensureCardData([setId]);
 
     const current = ownedFor(set);
     if (action === 'inc') setOwned(set, current + 1);
@@ -1543,6 +1555,7 @@
   document.getElementById('compareAllSetsChip').addEventListener('click', (e) => {
     state.compareAllSets = !state.compareAllSets;
     e.currentTarget.setAttribute('aria-pressed', String(state.compareAllSets));
+    if (state.compareAllSets) ensureCardData(SETS.map(s => s.id));
     renderApp();
   });
 
@@ -1578,6 +1591,8 @@
           profiles.push({ id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7), name, progress: normalized });
         }
         saveProfiles();
+        const trackedIds = Object.keys(normalized.tracked).filter(id => normalized.tracked[id]);
+        if (trackedIds.length) ensureCardData(trackedIds);
         renderApp();
       } catch (err) {
         alert('That file could not be read as a PokéLedger backup.');
@@ -1589,4 +1604,12 @@
 
   document.getElementById('trackedOnlyChip').setAttribute('aria-pressed', String(state.trackedOnly));
   renderApp();
+
+  // Eager-load card data only for sets already tracked (yours, plus any imported
+  // friend profiles) — everything else stays unfetched until a viewer opens it.
+  const eagerIds = new Set(Object.keys(progress.tracked).filter(id => progress.tracked[id]));
+  profiles.forEach(p => {
+    Object.keys(p.progress.tracked).filter(id => p.progress.tracked[id]).forEach(id => eagerIds.add(id));
+  });
+  if (eagerIds.size) ensureCardData([...eagerIds]);
 </script>
