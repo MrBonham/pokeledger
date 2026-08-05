@@ -354,30 +354,34 @@
   .era-badge.progress-idle { background: var(--idle-bg); color: var(--idle); }
 
   .row-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+  .row-list > .row-wrap:has(.card-panel) {
+    grid-column: 1 / -1;
   }
   .row-wrap { display: block; }
   .row {
     display: grid;
-    grid-template-columns: 3px minmax(0, 1.6fr) minmax(90px, 0.7fr) auto;
-    align-items: center;
-    gap: 14px;
+    grid-template-columns: 3px 1fr;
+    grid-template-areas:
+      "stripe main"
+      "stripe progress"
+      "stripe controls";
+    row-gap: 8px;
+    column-gap: 12px;
     background: var(--surface);
     box-shadow: var(--shadow);
     border-radius: var(--radius);
-    padding: 9px 12px 9px 0;
+    padding: 12px 14px 12px 12px;
   }
-  .row-wrap:has(.card-panel) .row {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-  .row-stripe { align-self: stretch; border-radius: 2px; background: var(--idle); }
+  .row-stripe { grid-area: stripe; border-radius: 2px; background: var(--idle); }
   .row-stripe.complete { background: var(--good); }
   .row-stripe.progress { background: var(--warn); }
 
-  .row-main { min-width: 0; }
+  .row-main { grid-area: main; min-width: 0; }
   .row-name-line {
     display: flex;
     align-items: baseline;
@@ -414,7 +418,7 @@
     margin-top: 2px;
   }
 
-  .row-progress { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
+  .row-progress { grid-area: progress; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .mini-bar {
     height: 5px;
     border-radius: 3px;
@@ -427,8 +431,10 @@
   .row-pct { font-size: 0.66rem; color: var(--text-dim); }
 
   .row-controls {
+    grid-area: controls;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
   }
   .stepper {
@@ -634,9 +640,11 @@
 
   /* ============ Card panel ============ */
   .card-panel {
-    border-radius: 0 0 var(--radius) var(--radius);
+    border-radius: var(--radius);
     background: var(--surface-2);
-    padding: 10px 14px 14px 17px;
+    box-shadow: var(--shadow);
+    padding: 14px 16px 16px;
+    margin-top: 2px;
   }
   .panel-note {
     margin: 0 0 8px;
@@ -754,23 +762,6 @@
     font-size: 0.72rem;
     color: var(--text-dim);
     line-height: 1.5;
-  }
-
-  @media (max-width: 640px) {
-    .row {
-      grid-template-columns: 3px 1fr;
-      grid-template-areas:
-        "stripe main"
-        "stripe progress"
-        "stripe controls";
-      row-gap: 8px;
-      padding: 10px 12px 10px 0;
-    }
-    .row-stripe { grid-area: stripe; }
-    .row-main { grid-area: main; }
-    .row-progress { grid-area: progress; }
-    .row-controls { grid-area: controls; justify-content: space-between; flex-wrap: wrap; }
-    .card-panel { padding-left: 12px; }
   }
 </style>
 <link rel="manifest" href="manifest.json" />
