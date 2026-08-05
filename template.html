@@ -287,17 +287,27 @@
     color: var(--text-dim);
   }
 
+  .era-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
   .era {
-    margin-bottom: 22px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .era.era-expanded {
+    grid-column: 1 / -1;
   }
   .era-header {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
     border-left: 4px solid var(--accent);
-    padding: 4px 0 4px 12px;
+    padding: 2px 0 2px 12px;
     margin-bottom: 8px;
   }
   .era-header h2 {
@@ -1299,13 +1309,13 @@
       lastEraNames = groups.map(g => g.series);
       lastEraCollapsedMap = {};
       const forceExpanded = !!(state.search || state.filter !== 'all' || state.trackedOnly);
-      main.innerHTML = groups.map(g => {
+      const eraCards = groups.map(g => {
         const done = g.sets.filter(s => statusFor(s) === 'complete').length;
         const collapsed = isEraCollapsed(g.series, g.sets) && !forceExpanded;
         lastEraCollapsedMap[g.series] = collapsed;
         const completionClass = done === 0 ? 'progress-idle' : done === g.sets.length ? 'progress-complete' : 'progress-partial';
         return `
-          <section class="era">
+          <section class="era ${collapsed ? '' : 'era-expanded'}">
             <div class="era-header">
               <button class="era-toggle" data-action="toggle-era" data-era="${esc(g.series)}" data-collapsed="${collapsed}" aria-expanded="${!collapsed}">
                 <span class="era-chevron">${collapsed ? '▸' : '▾'}</span>
@@ -1321,6 +1331,7 @@
           </section>
         `;
       }).join('');
+      main.innerHTML = `<div class="era-grid">${eraCards}</div>`;
     }
 
     updateEraToggleAllBtn();
