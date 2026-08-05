@@ -37,7 +37,7 @@ ${headContent}
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<meta name="theme-color" content="#0a1128" />
+<meta name="theme-color" content="#2c3531" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="PokéLedger" />

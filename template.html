@@ -1,79 +1,80 @@
 <title>PokéLedger — TCG Set Tracker</title>
 <style>
   /* ============ Tokens ============ */
-  /* Palette: Prussian Blue #0a1128, Deep Navy #001f54, Yale Blue #034078,
-     Cerulean #1282a2, White #fefcfb — dark theme uses all five verbatim;
-     light theme derives tints/shades from the same five. */
+  /* Palette: Charcoal Teal #2C3531, Deep Teal #116466, Tan #D9B08C,
+     Peach #FFCB9A, Pale Mint #D1E8E2 — dark theme uses the two dark
+     tones verbatim for bg/surface and peach as accent; light theme
+     derives its tones from the two light colors, same accent. */
   :root {
-    --bg: #f2f6f7;
-    --surface: #fefcfb;
-    --surface-2: #e6f0f2;
-    --border: #c3dee5;
-    --text: #0a1128;
-    --text-dim: #426f99;
-    --accent: #1282a2;
-    --accent-ink: #fefcfb;
-    --good: #1f9463;
+    --bg: #d1e8e2;
+    --surface: #f6faf9;
+    --surface-2: #d2e2d9;
+    --border: #abcec9;
+    --text: #2c3531;
+    --text-dim: #66746f;
+    --accent: #ffcb9a;
+    --accent-ink: #2c3531;
+    --good: #2f8a52;
     --good-bg: #e2f4ea;
     --warn: #b8802a;
     --warn-bg: #f5ead4;
-    --idle: #7c93ab;
-    --idle-bg: #eef2f6;
-    --shadow: 0 1px 2px rgba(10, 17, 40, 0.08);
+    --idle: #7c9490;
+    --idle-bg: #eef2f0;
+    --shadow: 0 1px 2px rgba(44, 53, 49, 0.08);
     --radius: 4px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0a1128;
-      --surface: #001f54;
-      --surface-2: #034078;
-      --border: #1e3a68;
-      --text: #fefcfb;
-      --text-dim: #9da8bc;
-      --accent: #1282a2;
-      --accent-ink: #fefcfb;
+      --bg: #2c3531;
+      --surface: #116466;
+      --surface-2: #1e4d4c;
+      --border: #418385;
+      --text: #d1e8e2;
+      --text-dim: #8ebab7;
+      --accent: #ffcb9a;
+      --accent-ink: #2c3531;
       --good: #4fbf85;
-      --good-bg: #18343b;
+      --good-bg: #1e3d30;
       --warn: #e0ac4f;
-      --warn-bg: #403832;
-      --idle: #7c8aa0;
-      --idle-bg: #1c2635;
+      --warn-bg: #59533a;
+      --idle: #6f8d8a;
+      --idle-bg: #223b39;
       --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0a1128;
-    --surface: #001f54;
-    --surface-2: #034078;
-    --border: #1e3a68;
-    --text: #fefcfb;
-    --text-dim: #9da8bc;
-    --accent: #1282a2;
-    --accent-ink: #fefcfb;
+    --bg: #2c3531;
+    --surface: #116466;
+    --surface-2: #1e4d4c;
+    --border: #418385;
+    --text: #d1e8e2;
+    --text-dim: #8ebab7;
+    --accent: #ffcb9a;
+    --accent-ink: #2c3531;
     --good: #4fbf85;
-    --good-bg: #18343b;
+    --good-bg: #1e3d30;
     --warn: #e0ac4f;
-    --warn-bg: #403832;
-    --idle: #7c8aa0;
-    --idle-bg: #1c2635;
+    --warn-bg: #59533a;
+    --idle: #6f8d8a;
+    --idle-bg: #223b39;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
   :root[data-theme="light"] {
-    --bg: #f2f6f7;
-    --surface: #fefcfb;
-    --surface-2: #e6f0f2;
-    --border: #c3dee5;
-    --text: #0a1128;
-    --text-dim: #426f99;
-    --accent: #1282a2;
-    --accent-ink: #fefcfb;
-    --good: #1f9463;
+    --bg: #d1e8e2;
+    --surface: #f6faf9;
+    --surface-2: #d2e2d9;
+    --border: #abcec9;
+    --text: #2c3531;
+    --text-dim: #66746f;
+    --accent: #ffcb9a;
+    --accent-ink: #2c3531;
+    --good: #2f8a52;
     --good-bg: #e2f4ea;
     --warn: #b8802a;
     --warn-bg: #f5ead4;
-    --idle: #7c93ab;
-    --idle-bg: #eef2f6;
-    --shadow: 0 1px 2px rgba(10, 17, 40, 0.08);
+    --idle: #7c9490;
+    --idle-bg: #eef2f0;
+    --shadow: 0 1px 2px rgba(44, 53, 49, 0.08);
   }
 
   * { box-sizing: border-box; }
