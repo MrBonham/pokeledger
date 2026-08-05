@@ -334,11 +334,24 @@
   }
   .era-meta {
     display: flex;
-    gap: 12px;
-    font-size: 0.72rem;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .era-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-2);
     color: var(--text-dim);
+    font-size: 0.68rem;
+    font-weight: 600;
     white-space: nowrap;
   }
+  .era-badge.progress-complete { background: var(--good-bg); color: var(--good); }
+  .era-badge.progress-partial { background: var(--warn-bg); color: var(--warn); }
+  .era-badge.progress-idle { background: var(--idle-bg); color: var(--idle); }
 
   .row-list {
     display: flex;
@@ -889,7 +902,7 @@
   }
 
   const STORAGE_KEY = 'poke-ledger-progress-v1';
-  const SNAPSHOT_DATE = 'Jul 31, 2026';
+  const SNAPSHOT_DATE = 'Aug 5, 2026';
 
   document.getElementById('dataDate').textContent = SNAPSHOT_DATE;
 
@@ -1304,6 +1317,7 @@
         const done = g.sets.filter(s => statusFor(s) === 'complete').length;
         const collapsed = isEraCollapsed(g.series, g.sets) && !forceExpanded;
         lastEraCollapsedMap[g.series] = collapsed;
+        const completionClass = done === 0 ? 'progress-idle' : done === g.sets.length ? 'progress-complete' : 'progress-partial';
         return `
           <section class="era">
             <div class="era-header">
@@ -1312,9 +1326,9 @@
                 <h2 class="display">${g.series}</h2>
               </button>
               <div class="era-meta mono">
-                <span>${eraYearRange(g.sets)}</span>
-                <span>${g.sets.length} sets</span>
-                <span>${done}/${g.sets.length} complete</span>
+                <span class="era-badge">${eraYearRange(g.sets)}</span>
+                <span class="era-badge">${g.sets.length} set${g.sets.length === 1 ? '' : 's'}</span>
+                <span class="era-badge ${completionClass}">${done}/${g.sets.length} complete</span>
               </div>
             </div>
             ${collapsed ? '' : `<div class="row-list">${g.sets.map(rowHtml).join('')}</div>`}
